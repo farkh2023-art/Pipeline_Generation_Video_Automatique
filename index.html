@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Mise en Œuvre du Pipeline de Génération Vidéo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            font-weight: 700;
+            color: #111827;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        h2 {
+            font-size: 1.75rem;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        h3 {
+            font-size: 1.25rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        pre {
+            background-color: #1f2937;
+            color: #d1d5db;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        code {
+            font-size: 0.875rem;
+        }
+        p, li {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .step-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .step-card h3 {
+            margin-top: 0;
+            color: #4f46e5;
+        }
+        .section-separator {
+            margin: 2rem 0;
+            border: 1px dashed #d1d5db;
+        }
+        .highlight {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="container bg-white rounded-xl shadow-lg p-8 md:p-12">
+        <h1 class="text-3xl md:text-4xl font-bold mb-6 text-center text-indigo-700">Plan de Mise en Œuvre du Pipeline Vidéo</h1>
+        <p class="text-center text-gray-600 mb-8">
+            Ce document détaille un plan d'action pas à pas pour la construction de votre pipeline de génération vidéo.
+        </p>
+
+        <!-- Étape 1 -->
+        <div class="step-card">
+            <h3>&#128295; Étape 1 : Initialisation et Gestion des Dépendances</h3>
+            <p>La première étape consiste à mettre en place la structure du projet en utilisant <span class="highlight">Poetry</span>, l'outil recommandé pour la gestion des dépendances.</p>
+            <ol class="list-decimal list-inside mt-4 space-y-2">
+                <li><span class="font-semibold">Installer Poetry</span> : Si ce n'est pas déjà fait, suivez la documentation officielle.</li>
+                <li><span class="font-semibold">Initialiser le projet</span> : Dans le dossier de votre projet, lancez :
+                    <pre><code class="language-bash">poetry init</code></pre>
+                    <p>Acceptez les valeurs par défaut pour créer le fichier `pyproject.toml`.</p>
+                </li>
+                <li><span class="font-semibold">Ajouter les dépendances</span> : Ajoutez les bibliothèques principales et de développement.
+                    <pre><code class="language-bash"># Dépendances principales
+poetry add tenacity colorlog tqdm
+
+# Dépendances de développement (tests, linting)
+poetry add --group dev pytest pytest-mock ruff</code></pre>
+                </li>
+                <li><span class="font-semibold">Configurer les extras</span> : Si vous gérez des dépendances spécifiques (ex: GPU), éditez votre `pyproject.toml` pour ajouter une section `[tool.poetry.extras]`.
+                    <pre><code class="language-toml">[tool.poetry.extras]
+gpu = ["torch==2.2.1+cu121", "xformers"]
+cpu = ["torch==2.2.1+cpu"]</code></pre>
+                </li>
+            </ol>
+        </div>
+
+        <div class="section-separator"></div>
+
+        <!-- Étape 2 -->
+        <div class="step-card">
+            <h3>&#128187; Étape 2 : Structuration du Code et Logging</h3>
+            <p>Créez une architecture de fichiers claire et mettez en place un système de journalisation robuste dès le début.</p>
+            <ol class="list-decimal list-inside mt-4 space-y-2">
+                <li><span class="font-semibold">Structure de dossiers</span> : Organisez vos fichiers comme suit :
+                    <pre><code class="language-text">.
+├── automated_pipeline.py
+├── make_video.py         # Point d'entrée principal
+├── extraction_markdown.py
+├── generate_audio.py
+├── generate_images.py
+├── montage_video_ffmpeg.py
+├── input/
+├── output/
+├── logs/
+└── pyproject.toml</code></pre>
+                </li>
+                <li><span class="font-semibold">Configurer les logs</span> : L'utilisation d'un module de log dédié est cruciale pour le débogage et le monitoring. Le fichier `log_lisible_dans_console_INFO_défaut.md` que vous avez fourni est une excellente base. Intégrez cette logique dans votre pipeline.</li>
+                <li><span class="font-semibold">Squelette du script principal</span> : Créez le fichier `make_video.py` qui sera le point d'entrée de votre application CLI.
+                    <pre><code class="language-python"># make_video.py
+import argparse
+import pathlib
+import logging
+from logger_setup import configure_logging # Implémentez ce module
+from datetime import datetime
+
+# Importez vos modules ici
+from extraction_markdown import extract_scenario
+from generate_audio import create_narrations
+from generate_images import generate_images_for_chapters
+from montage_video_ffmpeg import render_video
+
+def main():
+    parser = argparse.ArgumentParser(description="Génère une vidéo à partir d'un transcript.")
+    parser.add_argument("transcript", type=pathlib.Path, help="Chemin vers le transcript.")
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="-v pour INFO, -vv pour DEBUG")
+    args = parser.parse_args()
+
+    configure_logging(args.verbose)
+    log = logging.getLogger(__name__)
+    
+    log.info("Pipeline démarré.")
+    
+    # Validation initiale (fail-fast)
+    if not args.transcript.exists():
+        log.error("Le fichier de transcript n'existe pas.")
+        exit(1)
+
+    # Appels aux étapes du pipeline ici...
+    # Par exemple:
+    # safe_call(extract_scenario, args.transcript)
+    
+if __name__ == "__main__":
+    main()</code></pre>
+                </li>
+            </ol>
+        </div>
+
+        <div class="section-separator"></div>
+
+        <!-- Étape 3 -->
+        <div class="step-card">
+            <h3>&#128274; Étape 3 : Développement des Modules Cœur</h3>
+            <p>C'est l'étape de l'implémentation concrète. Chaque module doit être conçu pour être robuste et traçable.</p>
+            <ul class="list-disc list-inside mt-4 space-y-2">
+                <li><span class="font-semibold">Utilisez les exceptions métiers</span> : Définissez vos propres exceptions (ex: `ImageGenerationError`, `AudioGenerationError`) pour une gestion d'erreur fine.</li>
+                <li><span class="font-semibold">Fonctions "safe_" et Retry</span> : Encapsulez les appels aux APIs et modèles dans des fonctions décorées avec `tenacity` pour gérer les échecs temporaires.
+                    <pre><code class="language-python"># Exemple pour la génération d'images
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2))
+def safe_generate_image(prompt: str, out_path: pathlib.Path):
+    """
+    Génère une image avec retry en cas d'échec.
+    Gère les erreurs métiers spécifiques.
+    """
+    try:
+        # Votre appel au modèle de diffusion ici
+        # Ex: real_generate_image(prompt, out_path)
+        pass # Placeholder
+    except Exception as e:
+        raise ImageGenerationError(f"Erreur de génération pour le prompt '{prompt}'") from e</code></pre>
+                </li>
+                <li><span class="font-semibold">Boucle de traitement</span> : Dans la fonction principale, bouclez sur les chapitres du scénario et utilisez votre fonction `safe_call` pour chaque étape. Marquez l'état de chaque chapitre (réussi, échec, à régénérer).</li>
+            </ul>
+        </div>
+
+        <div class="section-separator"></div>
+
+        <!-- Étape 4 -->
+        <div class="step-card">
+            <h3>&#10024; Étape 4 : Implémentation des Fonctionnalités Avancées</h3>
+            <p>Ajoutez des améliorations pour rendre le pipeline plus pratique et efficace.</p>
+            <ul class="list-disc list-inside mt-4 space-y-2">
+                <li><span class="font-semibold">Relance à Chaud (`--skip`)</span> : Ajoutez un drapeau `--skip` à l'aide d'`argparse`. Dans votre boucle de traitement, si un fichier de sortie pour un chapitre existe déjà (ex: `output/audio/chapitre-1.wav`), ignorez l'étape.
+                <pre><code class="language-python">if not args.skip or not audio_file.exists():
+    log.info("Création de l'audio pour le chapitre...")
+    safe_call(create_narrations, chapter)
+else:
+    log.info("Audio pour le chapitre déjà présent, étape ignorée.")</code></pre>
+                </li>
+                <li><span class="font-semibold">Fallbacks</span> : Pour les étapes les plus fragiles, implémentez une logique de secours. Par exemple, si la génération d'image échoue après plusieurs tentatives, utilisez une image de placeholder générique à la place.</li>
+                <li><span class="font-semibold">Mesure des temps</span> : Ajoutez un chronomètre pour chaque étape afin de détecter les goulots d'étranglement.
+                <pre><code class="language-python">import time
+t0 = time.perf_counter()
+safe_call(create_narrations, chapter)
+log.info("Étape audio terminée en %.1fs", time.perf_counter() - t0)</code></pre>
+                </li>
+            </ul>
+        </div>
+
+        <div class="section-separator"></div>
+
+        <!-- Étape 5 -->
+        <div class="step-card">
+            <h3>&#128203; Étape 5 : Tests et CI</h3>
+            <p>Assurez la fiabilité du pipeline en mettant en place des tests et en automatisant les processus d'intégration continue.</p>
+            <ul class="list-disc list-inside mt-4 space-y-2">
+                <li><span class="font-semibold">Tests unitaires avec `pytest`</span> : Créez un dossier `tests/`. Écrivez des tests pour chaque module.
+                    <pre><code class="language-python"># tests/test_pipeline.py
+import pytest
+from your_module import some_function
+
+def test_some_function_works():
+    # Arrange, Act, Assert
+    result = some_function(input_data)
+    assert result == expected_output</code></pre>
+                </li>
+                <li><span class="font-semibold">Mocking avec `pytest-mock`</span> : Pour tester les fonctions qui dépendent d'APIs externes (TTS, modèles de diffusion), utilisez des "mocks" pour simuler leur comportement. Cela rendra vos tests rapides et fiables.</li>
+                <li><span class="font-semibold">CI/CD</span> : Configurez un workflow sur GitHub Actions pour exécuter les tests, le linting et vérifier la conformité de votre code à chaque commit.</li>
+            </ul>
+        </div>
+        
+        <p class="mt-8 text-center text-gray-700">
+            En suivant ce plan, vous construirez un pipeline non seulement fonctionnel, mais aussi résilient, maintenable et facile à monitorer. Bonne chance ! &#128640;
+        </p>
+
+    </div>
+</body>
+</html>

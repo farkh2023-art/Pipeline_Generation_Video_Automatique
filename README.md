@@ -1,5 +1,4 @@
-# Pipeline de Génération Vidéo Automatique
-
+Pipeline de Génération Vidéo Automatique
 🚀 Vue d'ensemble du Projet
 Ce pipeline automatise la création de vidéos narrées et illustrées à partir d'un simple fichier transcript en texte ou Markdown. Il orchestre de manière séquentielle plusieurs étapes critiques, en gérant les échecs et en assurant la traçabilité.
 
@@ -32,19 +31,15 @@ curl -sSL https://install.python-poetry.org | python3 -
 Installer les dépendances :
 Le pipeline nécessite le binaire ffmpeg. Assurez-vous qu'il est installé sur votre système et accessible via la variable d'environnement $PATH.
 
-## Pour macOS
-
+# Pour macOS:
 brew install ffmpeg
 
-## Pour Linux (Ubuntu)
-
+# Pour Linux (Ubuntu):
 sudo apt-get update && sudo apt-get install -y ffmpeg
 
 Installez ensuite les dépendances Python du projet :
 
-  
-## Pour un environnement CPU
-
+# Pour un environnement CPU:
 poetry install --extras cpu
 
 # Pour un environnement GPU (nécessite un driver NVIDIA compatible):
@@ -83,3 +78,15 @@ Ce paragraphe sert à illustrer le contenu.
 ---
 
 ## Chapitre 2 : La pratique
+
+Maintenant, appliquons ce que nous avons appris.
+
+---
+
+
+🐳 Déploiement avec Docker
+Pour un déploiement reproductible et conteneurisé, deux Dockerfiles sont fournis dans ce dépôt.
+
+Dockerfile.cpu : Conçu pour les environnements sans accélération graphique dédiée.
+
+Dockerfile.gpu : Optimisé pour tirer parti des GPUs NVIDIA avec CUDA.

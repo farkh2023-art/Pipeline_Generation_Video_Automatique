@@ -1,0 +1,38 @@
+# Dockerfile.gpu
+# Utilise une image de base NVIDIA avec CUDA
+# La version de l'image doit être compatible avec la version de Torch que vous utilisez
+FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu22.04
+
+# Installe Python et d'autres outils de développement
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-dev python3-pip python3-setuptools \
+    git ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Crée un lien symbolique pour l'exécutable Python
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+# Définit les variables d'environnement
+ENV PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1
+
+# Installe Poetry
+RUN pip install poetry
+
+# Définit le répertoire de travail
+WORKDIR /app
+
+# Copie les fichiers de configuration du projet
+COPY pyproject.toml poetry.lock ./
+
+# Installe les dépendances du projet, y compris l'extra GPU
+RUN poetry install --no-dev --extras gpu
+
+# Copie le reste du code de l'application
+COPY . .
+
+# Spécifie la commande à exécuter par défaut
+ENTRYPOINT ["poetry", "run", "python", "make_video.py"]

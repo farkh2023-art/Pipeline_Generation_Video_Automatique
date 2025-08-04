@@ -1,0 +1,33 @@
+# Dockerfile.cpu
+# Utilise une image Python de base légère
+FROM python:3.10-slim
+
+# Définit les variables d'environnement
+ENV PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1
+
+# Installe les dépendances système requises par ffmpeg
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installe Poetry
+RUN pip install poetry
+
+# Définit le répertoire de travail
+WORKDIR /app
+
+# Copie les fichiers de configuration du projet
+COPY pyproject.toml poetry.lock ./
+
+# Installe les dépendances du projet
+RUN poetry install --no-dev --extras cpu
+
+# Copie le reste du code de l'application
+COPY . .
+
+# Spécifie la commande à exécuter par défaut
+ENTRYPOINT ["poetry", "run", "python", "make_video.py"]
